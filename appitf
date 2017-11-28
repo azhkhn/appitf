@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 """Application interface for system interaction.
 
 This interface provides a WSGI service to allow an
@@ -10,10 +11,19 @@ from flask import Flask
 from backlight import NoSupportedGraphicsCards, Backlight
 
 
-APP = Flask('AppItf')
+HOST = '127.0.0.1'
+PORT = 5000
+APPLICATION = Flask('AppItf')
+PREFIX = '/appitf'
 
 
-@APP.route('/brightness/<int:brightness>', methods=['POST'])
+def route(path, **kwargs):
+    """Route wrapper with path prefix."""
+
+    return APPLICATION.route(PREFIX + path, **kwargs)
+
+
+@route('/brightness/<int:brightness>', methods=['POST'])
 def set_brightness(brightness):
     """Sets the display brightness."""
 
@@ -30,3 +40,7 @@ def set_brightness(brightness):
         return ('Service is not running as root.', 500)
 
     return f'Brightness set to {brightness}%.'
+
+
+if __name__ == '__main__':
+    APPLICATION.run(host=HOST, port=PORT)

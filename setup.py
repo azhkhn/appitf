@@ -11,6 +11,5 @@ setup(
     maintainer='Richard Neumann',
     maintainer_email='<r dot neumann at homeinfo period de>',
     requires=['flask', 'backlight'],
-    py_modules=['appitf'],
-    data_files=[('/etc/uwsgi/apps-available', ['appitf.ini'])],
+    scripts=['appitf'],
     description='Digital Signage Application System Interface.')
