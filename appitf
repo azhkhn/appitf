@@ -14,16 +14,9 @@ from backlight import NoSupportedGraphicsCards, Backlight
 HOST = '127.0.0.1'
 PORT = 5000
 APPLICATION = Flask('AppItf')
-PREFIX = '/appitf'
 
 
-def route(path, **kwargs):
-    """Route wrapper with path prefix."""
-
-    return APPLICATION.route(PREFIX + path, **kwargs)
-
-
-@route('/brightness/<int:brightness>', methods=['POST'])
+@APPLICATION.route('/brightness/<int:brightness>', methods=['POST'])
 def set_brightness(brightness):
     """Sets the display brightness."""
 
