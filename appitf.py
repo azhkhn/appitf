@@ -7,7 +7,7 @@ interact with the local operating system.
 
 from flask import Flask
 
-from backlight.api import NoSupportedGraphicsCards, Backlight
+from backlight import NoSupportedGraphicsCards, Backlight
 
 
 APP = Flask('AppItf')
