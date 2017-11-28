@@ -17,13 +17,16 @@ APP = Flask('AppItf')
 def set_brightness(brightness):
     """Sets the display brightness."""
 
-    if 0 <= brightness <= 100:
-        try:
-            backlight = Backlight.load()
-        except NoSupportedGraphicsCards:
-            return ('No supported graphics card found.', 503)
+    try:
+        backlight = Backlight.load()
+    except NoSupportedGraphicsCards:
+        return ('No supported graphics card found.', 503)
 
+    try:
         backlight.percent = brightness
-        return f'Brightness set to {brightness}%.'
+    except ValueError as value_error:
+        return (str(value_error), 400)
+    except PermissionError:
+        return ('Service is not running as root.', 500)
 
-    return (f'Brightness must be between 0 and 100.', 400)
+    return f'Brightness set to {brightness}%.'
