@@ -1,0 +1,9 @@
+[Unit]
+Description=Digital Signage Application system interface
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/appitfd
+
+[Install]
+WantedBy=multi-user.target
