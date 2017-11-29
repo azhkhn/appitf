@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-"""Application interface for system interaction.
+"""Application interface daemon for system interaction.
 
 This interface provides a HTTP service to allow an
 Adobe AIR or HTML5 digital signage application to

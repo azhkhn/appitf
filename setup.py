@@ -11,5 +11,5 @@ setup(
     maintainer='Richard Neumann',
     maintainer_email='<r dot neumann at homeinfo period de>',
     requires=['flask', 'backlight'],
-    scripts=['appitf'],
+    scripts=['appitfd'],
     description='Digital Signage Application System Interface.')
