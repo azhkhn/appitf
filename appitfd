@@ -20,12 +20,13 @@ from sys import stderr, exit as exit_
 from docopt import docopt
 from flask import Flask
 
-from backlight import NoSupportedGraphicsCards, Backlight
+from backlight import DoesNotExist, DoesNotSupportAPI, Backlight
 
 
+APPLICATION = Flask('AppItf')
 HOST = '127.0.0.1'
 PORT = 5000
-APPLICATION = Flask('AppItf')
+GRAPHICS_CARD = 'acpi_video0'
 
 
 @APPLICATION.route('/backlight/<int:brightness>', methods=['POST'])
@@ -33,9 +34,11 @@ def set_backlight(brightness):
     """Sets the backlight brightness."""
 
     try:
-        backlight = Backlight.load()
-    except NoSupportedGraphicsCards:
-        return ('No supported graphics card found.', 503)
+        backlight = Backlight(GRAPHICS_CARD)
+    except DoesNotExist:
+        return (f'Graphics card "{GRAPHICS_CARD}" unavailable.', 503)
+    except DoesNotSupportAPI:
+        return (f'Graphics card "{GRAPHICS_CARD}" does not support API.', 501)
 
     try:
         backlight.percent = brightness
