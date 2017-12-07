@@ -15,6 +15,7 @@ Options:
     --port=<port>, -p   Specifies the port to listen on [default: 5000].
     --help, -h          Shows this page.
 """
+from subprocess import DEVNULL, CalledProcessError, run
 from sys import stderr, exit as exit_
 
 from docopt import docopt
@@ -27,27 +28,52 @@ APPLICATION = Flask('AppItf')
 HOST = '127.0.0.1'
 PORT = 5000
 GRAPHICS_CARD = 'acpi_video0'
+XRANDR = '/usr/bin/xrandr'
+DISPLAY = ':0'
+OUTPUT = 'eDP-1'
 
 
-@APPLICATION.route('/backlight/<int:brightness>', methods=['POST'])
-def set_backlight(brightness):
+def get_xrandr_command(value, xrandr=XRANDR, display=DISPLAY, output=OUTPUT):
+    """Returns the respective xrandr command line."""
+
+    return f'DISPLAY={display} {xrandr} --output {output} --brightness {value}'
+
+
+def set_brightness_software(percent):
+    """Set brightness using software."""
+
+    value = percent / 100
+    completed_process = run(
+        get_xrandr_command(value), shell=True, stderr=DEVNULL, stdout=DEVNULL)
+
+    try:
+        completed_process.check_returncode()
+    except CalledProcessError as cpe:
+        return (str(cpe), 500)
+
+    return f'Brightness set to {percent}% using software.'
+
+
+@APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
+def set_backlight(percent):
     """Sets the backlight brightness."""
+
+    if percent < 0 or percent > 100:
+        return (f'Invalid percentage: {percent}.', 400)
 
     try:
         backlight = Backlight(GRAPHICS_CARD)
-    except DoesNotExist:
-        return (f'Graphics card "{GRAPHICS_CARD}" unavailable.', 503)
-    except DoesNotSupportAPI:
-        return (f'Graphics card "{GRAPHICS_CARD}" does not support API.', 501)
+    except (DoesNotExist, DoesNotSupportAPI):
+        return set_brightness_software(percent)
 
     try:
-        backlight.percent = brightness
+        backlight.percent = percent
     except ValueError as value_error:
         return (str(value_error), 400)
     except PermissionError:
         return ('Service is not running as root.', 500)
 
-    return f'Brightness set to {brightness}%.'
+    return f'Brightness set to {percent}% using hardware.'
 
 
 def main(options):
