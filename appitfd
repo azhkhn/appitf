@@ -51,7 +51,7 @@ def set_brightness_software(percent):
     except CalledProcessError as cpe:
         return (str(cpe), 500)
 
-    return jsonify({'msg': f'Brightness set to {percent}%.', 'method': 'SW'})
+    return jsonify({'percent': percent, 'method': 'SW'})
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
@@ -70,7 +70,7 @@ def set_backlight(percent):
     except PermissionError:
         return ('Service is not running as root.', 500)
 
-    return jsonify({'msg': f'Brightness set to {percent}%.', 'method': 'HW'})
+    return jsonify({'percent': percent, 'method': 'HW'})
 
 
 def main(options):
