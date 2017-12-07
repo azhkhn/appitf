@@ -30,7 +30,7 @@ PORT = 5000
 GRAPHICS_CARD = 'acpi_video0'
 XRANDR = '/usr/bin/xrandr'
 DISPLAY = ':0'
-OUTPUT = 'eDP-1'
+OUTPUT = 'eDP1'
 
 
 def get_xrandr_command(value, xrandr=XRANDR, display=DISPLAY, output=OUTPUT):
