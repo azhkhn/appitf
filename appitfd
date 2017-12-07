@@ -19,7 +19,7 @@ from subprocess import DEVNULL, CalledProcessError, run
 from sys import stderr, exit as exit_
 
 from docopt import docopt
-from flask import Flask
+from flask import jsonify, Flask
 
 from backlight import DoesNotExist, DoesNotSupportAPI, Backlight
 
@@ -51,7 +51,7 @@ def set_brightness_software(percent):
     except CalledProcessError as cpe:
         return (str(cpe), 500)
 
-    return f'Brightness set to {percent}% using software.'
+    return jsonify({'msg': f'Brightness set to {percent}%.', 'method': 'SW'})
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
@@ -70,7 +70,7 @@ def set_backlight(percent):
     except PermissionError:
         return ('Service is not running as root.', 500)
 
-    return f'Brightness set to {percent}% using hardware.'
+    return jsonify({'msg': f'Brightness set to {percent}%.', 'method': 'HW'})
 
 
 def main(options):
