@@ -58,9 +58,6 @@ def set_brightness_software(percent):
 def set_backlight(percent):
     """Sets the backlight brightness."""
 
-    if percent < 0 or percent > 100:
-        return (f'Invalid percentage: {percent}.', 400)
-
     try:
         backlight = Backlight(GRAPHICS_CARD)
     except (DoesNotExist, DoesNotSupportAPI):
