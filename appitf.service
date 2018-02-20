@@ -1,6 +1,7 @@
 [Unit]
 Description=Digital Signage Application system interface
 After=network.target
+Before=application.service
 
 [Service]
 ExecStart=/usr/bin/appitfd
