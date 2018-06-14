@@ -15,7 +15,7 @@ Options:
     --port=<port>, -p   Specifies the port to listen on [default: 5000].
     --help, -h          Shows this page.
 """
-from subprocess import DEVNULL, CalledProcessError, run
+from subprocess import DEVNULL, CalledProcessError, check_call
 from sys import stderr, exit as exit_
 
 from docopt import docopt
@@ -31,24 +31,24 @@ DISPLAY = ':0'
 OUTPUT = 'eDP1'
 
 
-def get_xrandr_command(value, xrandr=XRANDR, display=DISPLAY, output=OUTPUT):
+def _xrandr(value):
     """Returns the respective xrandr command line."""
 
-    return f'DISPLAY={display} {xrandr} --output {output} --brightness {value}'
+    return f'DISPLAY={DISPLAY} {XRANDR} --output {OUTPUT} --brightness {value}'
 
 
 def set_brightness_software(percent):
     """Set brightness using software."""
 
     value = percent / 100
-    completed_process = run(
-        get_xrandr_command(value), shell=True, stderr=DEVNULL, stdout=DEVNULL)
 
     try:
-        completed_process.check_returncode()
+        check_call(_xrandr(value), stdout=DEVNULL, stderr=DEVNULL, shell=True)
     except CalledProcessError as cpe:
+        print(f'Failed to run {XRANDR}.', file=stderr, flush=True)
         return (str(cpe), 500)
 
+    print(f'Set backlight to {percent}% by software.', flush=True)
     return jsonify({'percent': percent, 'method': 'SW'})
 
 
@@ -64,10 +64,14 @@ def set_backlight(percent):
     try:
         backlight.percent = percent
     except ValueError as value_error:
+        print('Got invalid percentage:', percent, file=stderr, flush=True)
         return (str(value_error), 400)
     except PermissionError:
-        return ('Service is not running as root.', 500)
+        message = 'Service is not running as root.'
+        print(message, file=stderr, flush=True)
+        return (message, 500)
 
+    print(f'Set backlight to {percent}% by hardware.', flush=True)
     return jsonify({'percent': percent, 'method': 'HW'})
 
 
@@ -80,7 +84,8 @@ def main(options):
     try:
         port = int(port)
     except ValueError:
-        print(f'Port number must be an integer, not "{port}".', file=stderr)
+        print(f'Port number must be an integer, not "{port}".', file=stderr,
+              flush=True)
         return 1
 
     APPLICATION.run(host=host, port=port)
