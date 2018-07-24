@@ -20,7 +20,7 @@ from sys import stderr, exit as exit_
 from docopt import docopt
 from flask import jsonify, Flask
 
-from backlight import backlight
+from backlight import brightness
 
 
 APPLICATION = Flask('AppItf')
@@ -34,7 +34,7 @@ def set_backlight(percent):
         print('Got invalid percentage:', percent, file=stderr, flush=True)
         return (f'Got invalid percentage: {percent}.', 400)
 
-    percent, method = backlight(percent)
+    percent, method = brightness(percent)
     return jsonify({'percent': percent, 'method': method})
 
 
