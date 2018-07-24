@@ -15,55 +15,15 @@ Options:
     --port=<port>, -p   Specifies the port to listen on [default: 5000].
     --help, -h          Shows this page.
 """
-from subprocess import DEVNULL, CalledProcessError, check_call
 from sys import stderr, exit as exit_
 
 from docopt import docopt
 from flask import jsonify, Flask
 
-from backlight import NoSupportedGraphicsCards, autoload
+from backlight import backlight
 
 
 APPLICATION = Flask('AppItf')
-XRANDR = '/usr/bin/xrandr'
-DISPLAY = ':0'
-OUTPUT = 'eDP1'
-
-
-def _xrandr(value):
-    """Returns the respective xrandr command line."""
-
-    return f'DISPLAY={DISPLAY} {XRANDR} --output {OUTPUT} --brightness {value}'
-
-
-def set_backlight_hardware(percent):
-    """Sets the backlight using Linux's /sys/class/backlight API."""
-
-    backlight = autoload()
-
-    try:
-        backlight.percent = percent
-    except KeyError:
-        backlight.raw = min(backlight.values)
-        percent = backlight.percent
-
-    print(f'Set backlight to {percent}% by hardware.', flush=True)
-    return jsonify({'percent': percent, 'method': 'HW'})
-
-
-def set_brightness_software(percent):
-    """Set brightness using software."""
-
-    value = percent / 100
-
-    try:
-        check_call(_xrandr(value), stdout=DEVNULL, stderr=DEVNULL, shell=True)
-    except CalledProcessError as cpe:
-        print(f'Failed to run {XRANDR}.', file=stderr, flush=True)
-        return (str(cpe), 500)
-
-    print(f'Set backlight to {percent}% by software.', flush=True)
-    return jsonify({'percent': percent, 'method': 'SW'})
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
@@ -74,10 +34,8 @@ def set_backlight(percent):
         print('Got invalid percentage:', percent, file=stderr, flush=True)
         return (f'Got invalid percentage: {percent}.', 400)
 
-    try:
-        return set_backlight_hardware(percent)
-    except NoSupportedGraphicsCards:
-        return set_brightness_software(percent)
+    percent, method = backlight(percent)
+    return jsonify({'percent': percent, 'method': method})
 
 
 def main(options):
