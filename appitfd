@@ -15,13 +15,15 @@ Options:
     --port=<port>, -p   Specifies the port to listen on [default: 5000].
     --help, -h          Shows this page.
 """
+from contextlib import suppress
 from subprocess import DEVNULL, CalledProcessError, check_call
 from sys import stderr, exit as exit_
 
 from docopt import docopt
 from flask import jsonify, Flask
 
-from backlight import DoesNotExist, DoesNotSupportAPI, Backlight
+from backlight import DoesNotExist, DoesNotSupportAPI, Backlight, \
+    ChrontelCH7511B
 
 
 APPLICATION = Flask('AppItf')
@@ -35,6 +37,37 @@ def _xrandr(value):
     """Returns the respective xrandr command line."""
 
     return f'DISPLAY={DISPLAY} {XRANDR} --output {OUTPUT} --brightness {value}'
+
+
+def set_backlight_i2c(percent):
+    """Attempts to set the backlight using the i2c."""
+
+    backlight = ChrontelCH7511B()
+
+    try:
+        backlight.percent = percent
+    except KeyError:
+        backlight.raw = min(backlight.values)
+        percent = backlight.percent
+
+    print(f'Set backlight to {percent}% by I2C.', flush=True)
+    return jsonify({'percent': percent, 'method': 'I2C'})
+
+
+def set_backlight_linux(percent):
+    """Sets the backlight using Linux's /sys/class/backlight API."""
+
+    backlight = Backlight(GRAPHICS_CARD)
+
+    try:
+        backlight.percent = percent
+    except PermissionError:
+        message = 'Service is not running as root.'
+        print(message, file=stderr, flush=True)
+        return (message, 500)
+
+    print(f'Set backlight to {percent}% by hardware.', flush=True)
+    return jsonify({'percent': percent, 'method': 'HW'})
 
 
 def set_brightness_software(percent):
@@ -56,23 +89,17 @@ def set_brightness_software(percent):
 def set_backlight(percent):
     """Sets the backlight brightness."""
 
-    try:
-        backlight = Backlight(GRAPHICS_CARD)
-    except (DoesNotExist, DoesNotSupportAPI):
-        return set_brightness_software(percent)
-
-    try:
-        backlight.percent = percent
-    except ValueError as value_error:
+    if not 0 <= percent <= 100:
         print('Got invalid percentage:', percent, file=stderr, flush=True)
-        return (str(value_error), 400)
-    except PermissionError:
-        message = 'Service is not running as root.'
-        print(message, file=stderr, flush=True)
-        return (message, 500)
+        return (f'Got invalid percentage: {percent}.', 400)
 
-    print(f'Set backlight to {percent}% by hardware.', flush=True)
-    return jsonify({'percent': percent, 'method': 'HW'})
+    with suppress(DoesNotExist):
+        return set_backlight_i2c(percent)
+
+    with suppress(DoesNotExist, DoesNotSupportAPI):
+        return set_backlight_linux(percent)
+
+    return set_brightness_software(percent)
 
 
 def main(options):
