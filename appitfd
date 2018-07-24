@@ -15,19 +15,16 @@ Options:
     --port=<port>, -p   Specifies the port to listen on [default: 5000].
     --help, -h          Shows this page.
 """
-from contextlib import suppress
 from subprocess import DEVNULL, CalledProcessError, check_call
 from sys import stderr, exit as exit_
 
 from docopt import docopt
 from flask import jsonify, Flask
 
-from backlight import DoesNotExist, DoesNotSupportAPI, Backlight, \
-    ChrontelCH7511B
+from backlight import NoSupportedGraphicsCards, autoload
 
 
 APPLICATION = Flask('AppItf')
-GRAPHICS_CARD = 'acpi_video0'
 XRANDR = '/usr/bin/xrandr'
 DISPLAY = ':0'
 OUTPUT = 'eDP1'
@@ -39,32 +36,16 @@ def _xrandr(value):
     return f'DISPLAY={DISPLAY} {XRANDR} --output {OUTPUT} --brightness {value}'
 
 
-def set_backlight_i2c(percent):
-    """Attempts to set the backlight using the i2c."""
+def set_backlight_hardware(percent):
+    """Sets the backlight using Linux's /sys/class/backlight API."""
 
-    backlight = ChrontelCH7511B()
+    backlight = autoload()
 
     try:
         backlight.percent = percent
     except KeyError:
         backlight.raw = min(backlight.values)
         percent = backlight.percent
-
-    print(f'Set backlight to {percent}% by I2C.', flush=True)
-    return jsonify({'percent': percent, 'method': 'I2C'})
-
-
-def set_backlight_linux(percent):
-    """Sets the backlight using Linux's /sys/class/backlight API."""
-
-    backlight = Backlight(GRAPHICS_CARD)
-
-    try:
-        backlight.percent = percent
-    except PermissionError:
-        message = 'Service is not running as root.'
-        print(message, file=stderr, flush=True)
-        return (message, 500)
 
     print(f'Set backlight to {percent}% by hardware.', flush=True)
     return jsonify({'percent': percent, 'method': 'HW'})
@@ -93,13 +74,10 @@ def set_backlight(percent):
         print('Got invalid percentage:', percent, file=stderr, flush=True)
         return (f'Got invalid percentage: {percent}.', 400)
 
-    with suppress(DoesNotExist):
-        return set_backlight_i2c(percent)
-
-    with suppress(DoesNotExist, DoesNotSupportAPI):
-        return set_backlight_linux(percent)
-
-    return set_brightness_software(percent)
+    try:
+        return set_backlight_hardware(percent)
+    except NoSupportedGraphicsCards:
+        return set_brightness_software(percent)
 
 
 def main(options):
