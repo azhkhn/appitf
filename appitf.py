@@ -19,23 +19,17 @@ APPLICATION = Flask('AppItf')
 def xmlify(element):
     """Reutns an XML response."""
 
-    return Response(ElementTree.dump(element), mimetype='application/xml')
-
-
-def brightness_xml(brightness_):
-    """Returns an element tree for the given brightness."""
-
-    root = ElementTree.Element('brightness')
-    root.attrib['percent'] = str(brightness_.percent)
-    root.attrib['method'] = brightness_.method
-    return root
+    return Response(ElementTree.tostring(element), mimetype='application/xml')
 
 
 def make_response(brightness_):
     """Generates a brightness response."""
 
     if 'xml' in request.args:
-        return xmlify(brightness_xml(brightness_))
+        root = ElementTree.Element('brightness')
+        root.attrib['percent'] = str(brightness_.percent)
+        root.attrib['method'] = brightness_.method
+        return xmlify(root)
 
     return jsonify({
         'percent': brightness_.percent,
