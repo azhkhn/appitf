@@ -16,6 +16,17 @@ from backlight import brightness
 APPLICATION = Flask('AppItf')
 
 
+def check_content_type(content_type):
+    """Checks the content type against the provided content types."""
+
+    content_types = request.headers.get('Accept', 'application/xml').split(',')
+
+    if '*/*' in content_types:
+        return True
+
+    return any(item.startwith(content_type) for item in content_types)
+
+
 def xmlify(element):
     """Reutns an XML response."""
 
@@ -25,15 +36,13 @@ def xmlify(element):
 def make_response(brightness_):
     """Generates a brightness response."""
 
-    content_type = request.headers.get('Accept', 'application/xml')
-
-    if content_type == 'application/xml':
+    if check_content_type('application/xml'):
         root = ElementTree.Element('brightness')
         root.attrib['percent'] = str(brightness_.percent)
         root.attrib['method'] = brightness_.method
         return xmlify(root)
 
-    if content_type == 'application/json':
+    if check_content_type('application/json'):
         return jsonify({
             'percent': brightness_.percent,
             'method': brightness_.method})
