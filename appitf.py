@@ -25,15 +25,20 @@ def xmlify(element):
 def make_response(brightness_):
     """Generates a brightness response."""
 
-    if 'xml' in request.args:
+    content_type = request.headers.get('Accept', 'application/xml')
+
+    if content_type == 'application/xml':
         root = ElementTree.Element('brightness')
         root.attrib['percent'] = str(brightness_.percent)
         root.attrib['method'] = brightness_.method
         return xmlify(root)
 
-    return jsonify({
-        'percent': brightness_.percent,
-        'method': brightness_.method})
+    if content_type == 'application/json':
+        return jsonify({
+            'percent': brightness_.percent,
+            'method': brightness_.method})
+
+    return ('Invalid content type.', 400)
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
