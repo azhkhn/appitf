@@ -38,7 +38,7 @@ def make_response(brightness_):
             'percent': brightness_.percent,
             'method': brightness_.method})
 
-    return ('Invalid content type.', 400)
+    return ('Content type not supported.', 406)
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
