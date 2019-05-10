@@ -1,10 +1,10 @@
-#! /usr/bin/env python3
 """Application interface for system interaction.
 
 This interface provides a HTTP service to allow an
 Adobe AIR or HTML5 digital signage application to
 interact with the local operating system.
 """
+from argparse import ArgumentParser
 from sys import stderr
 from xml.etree import cElementTree as ElementTree
 
@@ -14,6 +14,22 @@ from backlight import brightness
 
 
 APPLICATION = Flask('AppItf')
+DESCRIPTION = 'Application interface daemon for system interaction.'
+
+
+def get_args():
+    """Returns the command line arguments."""
+
+    parser = ArgumentParser(description=DESCRIPTION)
+    parser.add_argument(
+        '-a', '--address', default='127.0.0.1', metavar='address',
+        help='IPv4 address to listen on')
+    parser.add_argument(
+        '-p', '--port', type=int, default=5000, metavar='port',
+        help='port to listen on')
+    parser.add_argument(
+        '-v', '--verbose', action='store_true', help='turn on verbose logging')
+    return parser.parse_args()
 
 
 def check_content_type(content_type):
@@ -61,18 +77,9 @@ def set_backlight(percent):
     return make_response(brightness(percent))
 
 
-def main(options):
+def main():
     """Runs the daemon."""
 
-    host = options['--host']
-    port = options['--port']
-
-    try:
-        port = int(port)
-    except ValueError:
-        print(f'Port number must be an integer, not "{port}".', file=stderr,
-              flush=True)
-        return 1
-
-    APPLICATION.run(host=host, port=port)
+    args = get_args()
+    APPLICATION.run(host=args.address, port=args.port)
     return 0

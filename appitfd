@@ -1,26 +1,10 @@
 #! /usr/bin/env python3
-"""appitfd.
+"""Application interface daemon for system interaction."""
 
-    Application interface daemon for system interaction.
-
-    This interface provides a HTTP service to allow an
-    Adobe AIR or HTML5 digital signage application to
-    interact with the local operating system.
-
-Usage:
-    appitfd [options]
-
-Options:
-    --host=<host>, -H   Specifies the host to listen on [default: 127.0.0.1].
-    --port=<port>, -p   Specifies the port to listen on [default: 5000].
-    --help, -h          Shows this page.
-"""
-from sys import exit as exit_
-
-from docopt import docopt
+from sys import exit    # pylint: disable=W0622
 
 from appitf import main
 
 
 if __name__ == '__main__':
-    exit_(main(docopt(__doc__)))
+    exit(main())
