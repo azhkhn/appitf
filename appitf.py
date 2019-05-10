@@ -40,13 +40,14 @@ def check_content_type(content_type):
     if '*/*' in content_types:
         return True
 
-    return any(item.startwith(content_type) for item in content_types)
+    return any(item.startswith(content_type) for item in content_types)
 
 
 def xmlify(element):
     """Reutns an XML response."""
 
-    return Response(ElementTree.tostring(element), mimetype='application/xml')
+    xml = ElementTree.tostring(element)
+    return Response(xml, mimetype='application/xml')
 
 
 def make_response(brightness_):
