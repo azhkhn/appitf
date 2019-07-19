@@ -5,7 +5,7 @@ Adobe AIR or HTML5 digital signage application to
 interact with the local operating system.
 """
 from argparse import ArgumentParser
-from sys import stderr
+from logging import getLogger
 from xml.etree import cElementTree as ElementTree
 
 from flask import jsonify, request, Flask, Response
@@ -13,8 +13,13 @@ from flask import jsonify, request, Flask, Response
 from backlight import brightness
 
 
-APPLICATION = Flask('AppItf')
+__all__ = ['APPLICATION', 'main']
+
+
+NAME = 'AppItf'
+APPLICATION = Flask(NAME)
 DESCRIPTION = 'Application interface daemon for system interaction.'
+LOGGER = getLogger(NAME)
 
 
 def get_args():
@@ -35,12 +40,17 @@ def get_args():
 def check_content_type(content_type):
     """Checks the content type against the provided content types."""
 
-    content_types = request.headers.get('Accept', 'application/xml').split(',')
+    content_types = request.headers.get('Accept')
+
+    if not content_types:
+        return True
+
+    content_types = [type.strip() for type in content_types.split(',')]
 
     if '*/*' in content_types:
         return True
 
-    return any(item.startswith(content_type) for item in content_types)
+    return any(content_type in type for type in content_types)
 
 
 def xmlify(element):
@@ -72,7 +82,7 @@ def set_backlight(percent):
     """Sets the backlight brightness."""
 
     if not 0 <= percent <= 100:
-        print('Got invalid percentage:', percent, file=stderr, flush=True)
+        LOGGER.error('Got invalid percentage: %i.', percent)
         return (f'Got invalid percentage: {percent}.', 400)
 
     return make_response(brightness(percent))
