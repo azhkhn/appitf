@@ -13,4 +13,5 @@ setup(
     requires=['flask', 'backlight'],
     py_modules=['appitf'],
     scripts=['appitfd'],
-    description='Digital Signage Application System Interface.')
+    description='Digital Signage Application System Interface.'
+)

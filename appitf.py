@@ -4,13 +4,13 @@ This interface provides a HTTP service to allow an
 Adobe AIR or HTML5 digital signage application to
 interact with the local operating system.
 """
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from logging import getLogger
-from xml.etree import cElementTree as ElementTree
+from xml.etree.ElementTree import Element, tostring
 
-from flask import jsonify, request, Flask, Response
+from flask import Flask, Response, jsonify, request
 
-from backlight import brightness
+from backlight import Backlight, brightness
 
 
 __all__ = ['APPLICATION', 'main']
@@ -22,7 +22,7 @@ DESCRIPTION = 'Application interface daemon for system interaction.'
 LOGGER = getLogger(NAME)
 
 
-def get_args():
+def get_args() -> Namespace:
     """Returns the command line arguments."""
 
     parser = ArgumentParser(description=DESCRIPTION)
@@ -37,7 +37,7 @@ def get_args():
     return parser.parse_args()
 
 
-def check_content_type(content_type):
+def check_content_type(content_type: str) -> bool:
     """Checks the content type against the provided content types."""
 
     content_types = request.headers.get('Accept')
@@ -45,7 +45,7 @@ def check_content_type(content_type):
     if not content_types:
         return True
 
-    content_types = [type.strip() for type in content_types.split(',')]
+    content_types = {type.strip() for type in content_types.split(',')}
 
     if '*/*' in content_types:
         return True
@@ -53,39 +53,33 @@ def check_content_type(content_type):
     return any(content_type in type for type in content_types)
 
 
-def xmlify(element):
-    """Reutns an XML response."""
-
-    xml = ElementTree.tostring(element)
-    return Response(xml, mimetype='application/xml')
-
-
-def make_response(brightness_):
+def make_response(backlight: Backlight) -> Response:
     """Generates a brightness response."""
 
     if check_content_type('application/xml'):
-        root = ElementTree.Element('brightness')
-        root.attrib['percent'] = str(brightness_.percent)
-        root.attrib['method'] = brightness_.method
-        return xmlify(root)
+        root = Element('brightness')
+        root.attrib['percent'] = str(backlight.percent)
+        root.attrib['method'] = backlight.method
+        return Response(tostring(root), mimetype='application/xml')
 
     if check_content_type('application/json'):
         return jsonify({
-            'percent': brightness_.percent,
-            'method': brightness_.method})
+            'percent': backlight.percent,
+            'method': backlight.method
+        })
 
     return ('Content type not supported.', 406)
 
 
 @APPLICATION.route('/backlight/<int:percent>', methods=['POST'])
-def set_backlight(percent):
+def set_backlight(percent: int) -> Response:
     """Sets the backlight brightness."""
 
-    if not 0 <= percent <= 100:
-        LOGGER.error('Got invalid percentage: %i.', percent)
-        return (f'Got invalid percentage: {percent}.', 400)
+    if 0 <= percent <= 100:
+        return make_response(brightness(percent))
 
-    return make_response(brightness(percent))
+    LOGGER.error('Got invalid percentage: %i.', percent)
+    return (f'Got invalid percentage: {percent}.', 400)
 
 
 def main():
@@ -93,4 +87,3 @@ def main():
 
     args = get_args()
     APPLICATION.run(host=args.address, port=args.port)
-    return 0
